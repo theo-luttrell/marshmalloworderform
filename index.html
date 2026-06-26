@@ -76,8 +76,16 @@
             font-size: 20px;
             font-weight: bold;
             text-align: right;
-            margin: 20px 0;
+            margin: 10px 0 20px 0;
             color: #2c3e50;
+        }
+
+        .receipt-display {
+            font-size: 14px;
+            color: #7f8c8d;
+            text-align: right;
+            margin-top: 20px;
+            line-height: 1.5;
         }
 
         button {
@@ -116,6 +124,11 @@
             </div>
 
             <div class="form-group">
+                <label for="contactInfo">Email or Phone Number</label>
+                <input type="text" id="contactInfo" name="contactInfo" required placeholder="name@example.com or 555-1234">
+            </div>
+
+            <div class="form-group">
                 <label for="flavour">Marshmallow Flavour</label>
                 <select id="flavour" name="flavour" required>
                     <option value="" disabled selected>Loading flavours from spreadsheet...</option>
@@ -133,6 +146,7 @@
                 <input type="hidden" id="sq4" name="otherQty" value="0">
             </div>
 
+            <div class="receipt-display" id="receiptDisplay"></div>
             <div class="total-display" id="totalPriceDisplay">Total: $0.00</div>
             <button type="submit" id="submitBtn">Submit Order</button>
         </form>
@@ -218,16 +232,15 @@
 
             const formatted = `$${price.toFixed(2)}`;
 
-            let breakdownText = "";
+            let receiptHtml = "";
             if (totalQty > 0) {
-                let parts = [];
-                if (qty20 > 0) parts.push(`${qty20}x 20pcs`);
-                if (qty3 > 0) parts.push(`${qty3}x 3pcs`);
-                if (qty1 > 0) parts.push(`${qty1}x 1pcs`);
-                breakdownText = ` (${parts.join(', ')})`;
+                if (qty20 > 0) receiptHtml += `${qty20}x Mpk 20: $${(qty20 * (isA2 ? 20 : 25)).toFixed(2)}<br>`;
+                if (qty3 > 0) receiptHtml += `${qty3}x Mpk 3: $${(qty3 * (isA2 ? 3.5 : 4.5)).toFixed(2)}<br>`;
+                if (qty1 > 0) receiptHtml += `${qty1}x Mpk 1: $${(qty1 * (isA2 ? 1.5 : 2)).toFixed(2)}<br>`;
             }
 
-            document.getElementById('totalPriceDisplay').textContent = `Total: ${formatted}${breakdownText}`;
+            document.getElementById('receiptDisplay').innerHTML = receiptHtml;
+            document.getElementById('totalPriceDisplay').textContent = `Total: ${formatted}`;
             document.getElementById('totalPriceInput').value = formatted;
             return price;
         }

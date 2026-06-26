@@ -20,7 +20,7 @@ function doPost(e) {
     
     if (!ordersSheet) {
       ordersSheet = ss.insertSheet('orders');
-      ordersSheet.appendRow(["Timestamp", "Full Name", "Flavour", "20pcs Qty", "3pcs Qty", "1pcs Qty", "Other Qty", "Total Price"]);
+      ordersSheet.appendRow(["Timestamp", "Full Name", "Contact Info", "Flavour", "20pcs Qty", "3pcs Qty", "1pcs Qty", "Other Qty", "Total Price"]);
     }
     
     // Accept standard form post parameter keys directly
@@ -29,6 +29,7 @@ function doPost(e) {
     ordersSheet.appendRow([
       new Date(),
       p.fullName,
+      p.contactInfo,
       p.flavour,
       p.multipack20,
       p.multipack3,
