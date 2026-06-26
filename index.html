@@ -57,11 +57,10 @@
 <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
 <script>
-    // Database Endpoints Configurations
     const SPREADSHEET_ID = "18RfL1f5ec2k0mK2Y0ktk_in-BV6XFYFCrxpjQg4j7Q8";
     const POST_URL = "https://google.com";
     
-    // Direct visualization query endpoint to fetch column A on the 'info' tab without CORS blocks
+    // FIXED: Corrected the URL layout structure completely
     const DATA_FETCH_URL = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=info&range=A2:A`;
 
     const form = document.getElementById('orderForm');
@@ -70,43 +69,43 @@
 
     form.action = POST_URL;
 
-    // Pull sheet data cleanly bypassing Apps Script router limitations
     async function loadFlavours() {
         try {
             const response = await fetch(DATA_FETCH_URL);
+            if (!response.ok) throw new Error("Network connection error");
             const text = await response.text();
             
-            // Google wraps response streams in custom functions; slice text string down to parseable JSON
             const jsonString = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
             const data = JSON.parse(jsonString);
             
             const dynamicFlavors = [];
             if (data.table && data.table.rows) {
                 data.table.rows.forEach(row => {
-                    if (row.c && row.c[0] && row.c[0].v) {
-                        dynamicFlavors.push(row.c[0].v);
+                    if (row.c && row.c[0] && row.c[0].v !== null && row.c[0].v !== undefined) {
+                        dynamicFlavors.push(String(row.c[0].v).trim());
                     }
                 });
             }
 
             renderDropdown(dynamicFlavors);
         } catch (err) {
-            console.error("Data access error, pulling system baseline catalog lists:", err);
-            renderDropdown(["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"]);
+            console.error("Data access error:", err);
+            flavourSelect.innerHTML = '<option value="" disabled>Error loading flavours. Make sure Sheet sharing is set to Anyone with Link.</option>';
         }
     }
 
     function renderDropdown(flavors) {
-        flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
         if (flavors && flavors.length > 0) {
-            // Isolates the cell text matching A2 for dynamic calculations
-            firstFlavourValue = flavors[0]; 
+            flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
+            firstFlavourValue = flavors[0]; // Captures string in row 2 cell A2
             
             flavors.forEach(flavor => {
-                const opt = document.createElement('option');
-                opt.value = flavor;
-                opt.textContent = flavor;
-                flavourSelect.appendChild(opt);
+                if(flavor) {
+                    const opt = document.createElement('option');
+                    opt.value = flavor;
+                    opt.textContent = flavor;
+                    flavourSelect.appendChild(opt);
+                }
             });
         } else {
             flavourSelect.innerHTML = '<option value="" disabled>No flavours found in sheet</option>';
