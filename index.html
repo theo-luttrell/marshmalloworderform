@@ -256,7 +256,8 @@
             fetch(POST_URL, {
                 method: 'POST',
                 body: params,
-                mode: 'no-cors'
+                mode: 'no-cors',
+                credentials: 'include'
             })
             .then(() => {
                 alert("Order saved to Google Sheets successfully!");
