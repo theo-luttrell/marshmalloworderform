@@ -107,7 +107,7 @@
     <div class="form-container">
         <h2>Marshmallow Order Form</h2>
 
-        <form id="orderForm" method="POST" target="hidden_iframe">
+        <form id="orderForm" method="POST">
             <input type="hidden" id="totalPriceInput" name="totalPrice" value="$0.00">
 
             <div class="form-group">
@@ -137,8 +137,6 @@
             <button type="submit" id="submitBtn">Submit Order</button>
         </form>
     </div>
-
-    <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
     <script>
         const SPREADSHEET_ID = "18RfL1f5ec2k0mK2Y0ktk_in-BV6XFYFCrxpjQg4j7Q8";
@@ -238,23 +236,42 @@
         window.addEventListener('DOMContentLoaded', loadFlavours);
 
         let submissionActive = false;
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent standard form submission
+            if (submissionActive) return;
+            
             // Update calculation one last time to ensure hidden fields are perfect
             calculatePrice();
+            
             submissionActive = true;
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').textContent = "Sending...";
-        });
 
-        document.getElementById('hidden_iframe').addEventListener('load', () => {
-            if (submissionActive) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            for (const pair of formData) {
+                params.append(pair[0], pair[1]);
+            }
+
+            fetch(POST_URL, {
+                method: 'POST',
+                body: params,
+                mode: 'no-cors'
+            })
+            .then(() => {
                 alert("Order saved to Google Sheets successfully!");
                 form.reset();
                 calculatePrice();
+            })
+            .catch((error) => {
+                console.error('Error submitting form:', error);
+                alert("There was an error saving your order. Please try again.");
+            })
+            .finally(() => {
                 submissionActive = false;
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('submitBtn').textContent = "Submit Order";
-            }
+            });
         });
     </script>
 </body>
