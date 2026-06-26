@@ -58,41 +58,46 @@
 <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
 <script>
-    // REPLACE WITH YOUR NEW WEB APP EXEC URL
+    // 1. PASTE YOUR NEW UPDATED EXEC URL HERE (The one ending in /exec)
     const API_URL = "https://script.google.com/macros/s/AKfycbzdbZAJdf1_E97B-TKxZ6HTlt5HQJ8tg00zfD37O880X5yWWll7pbOND6WeKvCRa4VAHA/exec";
 
     const form = document.getElementById('orderForm');
     const flavourSelect = document.getElementById('flavour');
-    let baseFlavour = "Classic Vanilla"; // Default A2 matching pattern fallback
+    let firstFlavourValue = ""; 
 
     form.action = API_URL;
 
-    // Load list configurations safely
-    async function loadFlavours() {
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            renderDropdown(data.flavors);
-        } catch (err) {
-            console.warn("External fetch restricted. Loading standard flavors list.");
-            renderDropdown(["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"]);
-        }
+    // 2. Load flavors seamlessly via JSONP script injection
+    function loadFlavours() {
+        const script = document.createElement('script');
+        script.src = `${API_URL}?callback=onFlavorsLoaded`;
+        script.onerror = function() {
+            console.warn("Script loading failed. Using fallback catalog list.");
+            onFlavorsLoaded({ flavors: ["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"] });
+        };
+        document.body.appendChild(script);
     }
 
-    function renderDropdown(list) {
+    // 3. Callback parsing configuration
+    window.onFlavorsLoaded = function(data) {
         flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
-        if (list && list.length > 0) {
-            baseFlavour = list[0]; 
-            list.forEach(item => {
+        if (data && data.flavors && data.flavors.length > 0) {
+            // Sets dynamic baseline targeting cell A2 for conditional pricing mechanics
+            firstFlavourValue = data.flavors[0]; 
+            
+            data.flavors.forEach(flavor => {
                 const opt = document.createElement('option');
-                opt.value = item; opt.textContent = item;
+                opt.value = flavor;
+                opt.textContent = flavor;
                 flavourSelect.appendChild(opt);
             });
+        } else {
+            flavourSelect.innerHTML = '<option value="" disabled>No flavours found</option>';
         }
-    }
+    };
 
     function calculatePrice() {
-        const isA2 = flavourSelect.value === baseFlavour;
+        const isA2 = flavourSelect.value === firstFlavourValue;
         let price = 0;
 
         price += (parseInt(document.getElementById('sq1').value) || 0) * (isA2 ? 20 : 25);
@@ -109,7 +114,6 @@
     form.addEventListener('input', calculatePrice);
     window.addEventListener('DOMContentLoaded', loadFlavours);
 
-    // Track submission callback cycles cleanly using the frame element hook
     let submissionActive = false;
     form.addEventListener('submit', () => {
         submissionActive = true;
@@ -119,7 +123,7 @@
 
     document.getElementById('hidden_iframe').addEventListener('load', () => {
         if (submissionActive) {
-            alert("Order filed to Google Sheets successfully!");
+            alert("Order saved to Google Sheets successfully!");
             form.reset();
             calculatePrice();
             submissionActive = false;
@@ -128,5 +132,6 @@
         }
     });
 </script>
+
 </body>
 </html>
