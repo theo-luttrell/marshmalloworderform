@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marshmallow Order Form</title>
+    <!-- Simple baseline shortcut link to resolve the 404 favicon console warning -->
+    <link rel="icon" href="data:,">
     <style>
         :root { --primary: #ffb6c1; --primary-dark: #ff91a4; --text: #4a4a4a; --bg: #fff5f6; }
         body { font-family: sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
@@ -25,7 +27,6 @@
 <div class="form-container">
     <h2>Marshmallow Order Form</h2>
     
-    <!-- target redirects action data to the hidden iframe below, bypassing CORS completely -->
     <form id="orderForm" method="POST" target="hidden_iframe">
         <input type="hidden" id="totalPriceInput" name="totalPrice" value="$0.00">
         
@@ -54,12 +55,11 @@
     </form>
 </div>
 
-<!-- Hidden processing window target -->
+<!-- Form submission route target endpoint bypassing POST origin rules -->
 <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
 <script>
-    // 1. PASTE YOUR NEW UPDATED EXEC URL HERE (The one ending in /exec)
-    const API_URL = "https://script.google.com/macros/s/AKfycbzdbZAJdf1_E97B-TKxZ6HTlt5HQJ8tg00zfD37O880X5yWWll7pbOND6WeKvCRa4VAHA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwyRxfQp4tPB8hFgezv7AjbcySJyckmqinTLwhTwcE2tYRufLTvewj-5YvQ32_9ZSAqhw/exec";
 
     const form = document.getElementById('orderForm');
     const flavourSelect = document.getElementById('flavour');
@@ -67,22 +67,22 @@
 
     form.action = API_URL;
 
-    // 2. Load flavors seamlessly via JSONP script injection
+    // FIXED: Uses dynamic script element injection instead of standard fetch requests
     function loadFlavours() {
         const script = document.createElement('script');
         script.src = `${API_URL}?callback=onFlavorsLoaded`;
         script.onerror = function() {
-            console.warn("Script loading failed. Using fallback catalog list.");
+            console.warn("Script generation blocked. Applying system defaults.");
             onFlavorsLoaded({ flavors: ["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"] });
         };
         document.body.appendChild(script);
     }
 
-    // 3. Callback parsing configuration
+    // JSONP execution routing hook
     window.onFlavorsLoaded = function(data) {
         flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
         if (data && data.flavors && data.flavors.length > 0) {
-            // Sets dynamic baseline targeting cell A2 for conditional pricing mechanics
+            // Isolates the precise value matching cell A2 for standard dynamic calculations
             firstFlavourValue = data.flavors[0]; 
             
             data.flavors.forEach(flavor => {
@@ -132,6 +132,5 @@
         }
     });
 </script>
-
 </body>
 </html>
