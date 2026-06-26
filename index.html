@@ -125,7 +125,7 @@
             <div class="form-group">
                 <label for="totalQty">Total Quantity</label>
                 <input type="number" id="totalQty" name="totalQty" min="0" value="0">
-                
+
                 <!-- Hidden fields for backwards compatibility with the spreadsheet columns -->
                 <input type="hidden" id="sq1" name="multipack20" value="0">
                 <input type="hidden" id="sq2" name="multipack3" value="0">
@@ -151,7 +151,7 @@
         // Pull rows securely via public data serialization script injections
         function loadFlavours() {
             const script = document.createElement('script');
-            script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleResponseWrapper&sheet=info&range=A2:A`;
+            script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleResponseWrapper&sheet=FLAVOUR+INFO&range=A2:A`;
             script.onerror = function () {
                 console.error("Failed to build connection pipeline to Google infrastructure.");
                 flavourSelect.innerHTML = '<option value="" disabled>Connection Error</option>';
@@ -200,13 +200,13 @@
             let price = 0;
 
             const totalQty = parseInt(document.getElementById('totalQty').value) || 0;
-            
+
             const qty20 = Math.floor(totalQty / 20);
             const rem20 = totalQty % 20;
             const qty3 = Math.floor(rem20 / 3);
             const rem3 = rem20 % 3;
             const qty1 = rem3;
-            
+
             document.getElementById('sq1').value = qty20;
             document.getElementById('sq2').value = qty3;
             document.getElementById('sq3').value = qty1;
@@ -217,7 +217,7 @@
             price += qty1 * (isA2 ? 1.5 : 2);
 
             const formatted = `$${price.toFixed(2)}`;
-            
+
             let breakdownText = "";
             if (totalQty > 0) {
                 let parts = [];
@@ -239,40 +239,35 @@
         form.addEventListener('submit', (e) => {
             e.preventDefault(); // Prevent standard form submission
             if (submissionActive) return;
-            
+
             // Update calculation one last time to ensure hidden fields are perfect
             calculatePrice();
-            
+
             submissionActive = true;
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').textContent = "Sending...";
 
             const formData = new FormData(form);
-            const params = new URLSearchParams();
-            for (const pair of formData) {
-                params.append(pair[0], pair[1]);
-            }
 
             fetch(POST_URL, {
                 method: 'POST',
-                body: params,
-                mode: 'no-cors',
-                credentials: 'include'
+                body: formData,
+                mode: 'no-cors'
             })
-            .then(() => {
-                alert("Order saved to Google Sheets successfully!");
-                form.reset();
-                calculatePrice();
-            })
-            .catch((error) => {
-                console.error('Error submitting form:', error);
-                alert("There was an error saving your order. Please try again.");
-            })
-            .finally(() => {
-                submissionActive = false;
-                document.getElementById('submitBtn').disabled = false;
-                document.getElementById('submitBtn').textContent = "Submit Order";
-            });
+                .then(() => {
+                    alert("Order saved to Google Sheets successfully!");
+                    form.reset();
+                    calculatePrice();
+                })
+                .catch((error) => {
+                    console.error('Error submitting form:', error);
+                    alert("There was an error saving your order. Please try again.");
+                })
+                .finally(() => {
+                    submissionActive = false;
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('submitBtn').textContent = "Submit Order";
+                });
         });
     </script>
 </body>
