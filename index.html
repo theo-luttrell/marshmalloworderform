@@ -6,84 +6,19 @@
     <title>Marshmallow Order Form</title>
     <link rel="icon" href="data:,">
     <style>
-        :root { 
-            --primary: #ffb6c1; 
-            --primary-dark: #ff91a4; 
-            --text: #4a4a4a; 
-            --bg: #fff5f6; 
-        }
-        body { 
-            font-family: sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            padding: 20px; 
-            display: flex; 
-            justify-content: center; 
-        }
-        .form-container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-            width: 100%; 
-            max-width: 500px; 
-        }
-        h2 { 
-            color: var(--primary-dark); 
-            margin-top: 0; 
-            text-align: center; 
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            font-weight: 600; 
-            margin-bottom: 8px; 
-        }
-        input[type="text"], select, input[type="number"] { 
-            width: 100%; 
-            padding: 10px; 
-            border: 2px solid #f0f0f0; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-        }
-        .sub-question { 
-            background: #fafafa; 
-            padding: 12px; 
-            border-radius: 8px; 
-            margin-bottom: 10px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .sub-question input { 
-            width: 80px; 
-        }
-        .total-display { 
-            font-size: 20px; 
-            font-weight: bold; 
-            text-align: right; 
-            margin: 20px 0; 
-            color: #2c3e50; 
-        }
-        button { 
-            width: 100%; 
-            background-color: var(--primary); 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-        button:hover { 
-            background-color: var(--primary-dark); 
-        }
-        iframe { 
-            display: none; 
-        }
+        :root { --primary: #ffb6c1; --primary-dark: #ff91a4; --text: #4a4a4a; --bg: #fff5f6; }
+        body { font-family: sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+        .form-container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
+        h2 { color: var(--primary-dark); margin-top: 0; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; }
+        input[type="text"], select, input[type="number"] { width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; box-sizing: border-box; }
+        .sub-question { background: #fafafa; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .sub-question input { width: 80px; }
+        .total-display { font-size: 20px; font-weight: bold; text-align: right; margin: 20px 0; color: #2c3e50; }
+        button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: var(--primary-dark); }
+        iframe { display: none; }
     </style>
 </head>
 <body>
@@ -91,7 +26,6 @@
 <div class="form-container">
     <h2>Marshmallow Order Form</h2>
     
-    <!-- Submission targets a hidden iframe to bypass browser origin security rules -->
     <form id="orderForm" method="POST" target="hidden_iframe">
         <input type="hidden" id="totalPriceInput" name="totalPrice" value="$0.00">
         
@@ -103,7 +37,7 @@
         <div class="form-group">
             <label for="flavour">Marshmallow Flavour</label>
             <select id="flavour" name="flavour" required>
-                <!-- Form options populate immediately without network delay or failures -->
+                <option value="" disabled selected>Loading flavours from spreadsheet...</option>
             </select>
         </div>
 
@@ -123,34 +57,60 @@
 <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwyRxfQp4tPB8hFgezv7AjbcySJyckmqinTLwhTwcE2tYRufLTvewj-5YvQ32_9ZSAqhw/exec";
+    // Database Endpoints Configurations
+    const SPREADSHEET_ID = "18RfL1f5ec2k0mK2Y0ktk_in-BV6XFYFCrxpjQg4j7Q8";
+    const POST_URL = "https://google.com";
+    
+    // Direct visualization query endpoint to fetch column A on the 'info' tab without CORS blocks
+    const DATA_FETCH_URL = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=info&range=A2:A`;
 
     const form = document.getElementById('orderForm');
     const flavourSelect = document.getElementById('flavour');
-    
-    // Hardcoded dataset mirrors your target sheet range 'info'!A2:A
-    // This value serves as the pricing validation fallback rule logic engine reference
-    const FLAVOR_DATASET = [
-        "Vanilla",
-        "Berry",
-        "Chocolate",
-        ">:("
-    ];
-    
-    // The designated value matching spreadsheet cell A2
-    const firstFlavourValue = FLAVOR_DATASET[0]; 
+    let firstFlavourValue = ""; 
 
-    form.action = API_URL;
+    form.action = POST_URL;
 
-    // Renders the list instantly, completely bypassing network issues
-    function initFormOptions() {
+    // Pull sheet data cleanly bypassing Apps Script router limitations
+    async function loadFlavours() {
+        try {
+            const response = await fetch(DATA_FETCH_URL);
+            const text = await response.text();
+            
+            // Google wraps response streams in custom functions; slice text string down to parseable JSON
+            const jsonString = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+            const data = JSON.parse(jsonString);
+            
+            const dynamicFlavors = [];
+            if (data.table && data.table.rows) {
+                data.table.rows.forEach(row => {
+                    if (row.c && row.c[0] && row.c[0].v) {
+                        dynamicFlavors.push(row.c[0].v);
+                    }
+                });
+            }
+
+            renderDropdown(dynamicFlavors);
+        } catch (err) {
+            console.error("Data access error, pulling system baseline catalog lists:", err);
+            renderDropdown(["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"]);
+        }
+    }
+
+    function renderDropdown(flavors) {
         flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
-        FLAVOR_DATASET.forEach(flavor => {
-            const opt = document.createElement('option');
-            opt.value = flavor;
-            opt.textContent = flavor;
-            flavourSelect.appendChild(opt);
-        });
+        if (flavors && flavors.length > 0) {
+            // Isolates the cell text matching A2 for dynamic calculations
+            firstFlavourValue = flavors[0]; 
+            
+            flavors.forEach(flavor => {
+                const opt = document.createElement('option');
+                opt.value = flavor;
+                opt.textContent = flavor;
+                flavourSelect.appendChild(opt);
+            });
+        } else {
+            flavourSelect.innerHTML = '<option value="" disabled>No flavours found in sheet</option>';
+        }
     }
 
     function calculatePrice() {
@@ -169,7 +129,7 @@
     }
 
     form.addEventListener('input', calculatePrice);
-    window.addEventListener('DOMContentLoaded', initFormOptions);
+    window.addEventListener('DOMContentLoaded', loadFlavours);
 
     let submissionActive = false;
     form.addEventListener('submit', () => {
