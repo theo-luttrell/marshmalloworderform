@@ -73,7 +73,7 @@
         script.src = `${API_URL}?callback=onFlavorsLoaded`;
         script.onerror = function() {
             console.warn("Script generation blocked. Applying system defaults.");
-            onFlavorsLoaded({ flavors: ["Classic Vanilla", "Toasted Coconut", "Strawberry Swirl"] });
+            onFlavorsLoaded({ flavors: ["Vanilla", "Berry", "Chocolate :)"] });
         };
         document.body.appendChild(script);
     }
