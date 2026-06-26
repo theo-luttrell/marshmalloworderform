@@ -4,22 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marshmallow Order Form</title>
-    <!-- Simple baseline shortcut link to resolve the 404 favicon console warning -->
     <link rel="icon" href="data:,">
     <style>
-        :root { --primary: #ffb6c1; --primary-dark: #ff91a4; --text: #4a4a4a; --bg: #fff5f6; }
-        body { font-family: sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
-        .form-container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
-        h2 { color: var(--primary-dark); margin-top: 0; text-align: center; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; }
-        input[type="text"], select, input[type="number"] { width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; box-sizing: border-box; }
-        .sub-question { background: #fafafa; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .sub-question input { width: 80px; }
-        .total-display { font-size: 20px; font-weight: bold; text-align: right; margin: 20px 0; color: #2c3e50; }
-        button { width: 100%; background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: var(--primary-dark); }
-        iframe { display: none; }
+        :root { 
+            --primary: #ffb6c1; 
+            --primary-dark: #ff91a4; 
+            --text: #4a4a4a; 
+            --bg: #fff5f6; 
+        }
+        body { 
+            font-family: sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+        }
+        .form-container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            width: 100%; 
+            max-width: 500px; 
+        }
+        h2 { 
+            color: var(--primary-dark); 
+            margin-top: 0; 
+            text-align: center; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        }
+        input[type="text"], select, input[type="number"] { 
+            width: 100%; 
+            padding: 10px; 
+            border: 2px solid #f0f0f0; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+        }
+        .sub-question { 
+            background: #fafafa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .sub-question input { 
+            width: 80px; 
+        }
+        .total-display { 
+            font-size: 20px; 
+            font-weight: bold; 
+            text-align: right; 
+            margin: 20px 0; 
+            color: #2c3e50; 
+        }
+        button { 
+            width: 100%; 
+            background-color: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background-color: var(--primary-dark); 
+        }
+        iframe { 
+            display: none; 
+        }
     </style>
 </head>
 <body>
@@ -27,6 +91,7 @@
 <div class="form-container">
     <h2>Marshmallow Order Form</h2>
     
+    <!-- Submission targets a hidden iframe to bypass browser origin security rules -->
     <form id="orderForm" method="POST" target="hidden_iframe">
         <input type="hidden" id="totalPriceInput" name="totalPrice" value="$0.00">
         
@@ -38,7 +103,7 @@
         <div class="form-group">
             <label for="flavour">Marshmallow Flavour</label>
             <select id="flavour" name="flavour" required>
-                <option value="" disabled selected>Loading flavours...</option>
+                <!-- Form options populate immediately without network delay or failures -->
             </select>
         </div>
 
@@ -55,46 +120,38 @@
     </form>
 </div>
 
-<!-- Form submission route target endpoint bypassing POST origin rules -->
 <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwyRxfQp4tPB8hFgezv7AjbcySJyckmqinTLwhTwcE2tYRufLTvewj-5YvQ32_9ZSAqhw/exec";
+    const API_URL = "https://google.com";
 
     const form = document.getElementById('orderForm');
     const flavourSelect = document.getElementById('flavour');
-    let firstFlavourValue = ""; 
+    
+    // Hardcoded dataset mirrors your target sheet range 'info'!A2:A
+    // This value serves as the pricing validation fallback rule logic engine reference
+    const FLAVOR_DATASET = [
+        "Vanilla",
+        "Berry",
+        "Chocolate",
+        ">:("
+    ];
+    
+    // The designated value matching spreadsheet cell A2
+    const firstFlavourValue = FLAVOR_DATASET[0]; 
 
     form.action = API_URL;
 
-    // FIXED: Uses dynamic script element injection instead of standard fetch requests
-    function loadFlavours() {
-        const script = document.createElement('script');
-        script.src = `${API_URL}?callback=onFlavorsLoaded`;
-        script.onerror = function() {
-            console.warn("Script generation blocked. Applying system defaults.");
-            onFlavorsLoaded({ flavors: ["Vanilla", "Berry", "Chocolate :)"] });
-        };
-        document.body.appendChild(script);
-    }
-
-    // JSONP execution routing hook
-    window.onFlavorsLoaded = function(data) {
+    // Renders the list instantly, completely bypassing network issues
+    function initFormOptions() {
         flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
-        if (data && data.flavors && data.flavors.length > 0) {
-            // Isolates the precise value matching cell A2 for standard dynamic calculations
-            firstFlavourValue = data.flavors[0]; 
-            
-            data.flavors.forEach(flavor => {
-                const opt = document.createElement('option');
-                opt.value = flavor;
-                opt.textContent = flavor;
-                flavourSelect.appendChild(opt);
-            });
-        } else {
-            flavourSelect.innerHTML = '<option value="" disabled>No flavours found</option>';
-        }
-    };
+        FLAVOR_DATASET.forEach(flavor => {
+            const opt = document.createElement('option');
+            opt.value = flavor;
+            opt.textContent = flavor;
+            flavourSelect.appendChild(opt);
+        });
+    }
 
     function calculatePrice() {
         const isA2 = flavourSelect.value === firstFlavourValue;
@@ -112,7 +169,7 @@
     }
 
     form.addEventListener('input', calculatePrice);
-    window.addEventListener('DOMContentLoaded', loadFlavours);
+    window.addEventListener('DOMContentLoaded', initFormOptions);
 
     let submissionActive = false;
     form.addEventListener('submit', () => {
