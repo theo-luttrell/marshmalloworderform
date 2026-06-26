@@ -165,7 +165,7 @@
         // Pull rows securely via public data serialization script injections
         function loadFlavours() {
             const script = document.createElement('script');
-            script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleResponseWrapper&sheet=FLAVOUR+INFO&range=A2:A`;
+            script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleResponseWrapper&sheet=FLAVOUR+INFO&range=A2:D`;
             script.onerror = function () {
                 console.error("Failed to build connection pipeline to Google infrastructure.");
                 flavourSelect.innerHTML = '<option value="" disabled>Connection Error</option>';
@@ -180,7 +180,11 @@
             if (data && data.table && data.table.rows) {
                 data.table.rows.forEach(row => {
                     if (row.c && row.c[0] && row.c[0].v !== null) {
-                        dynamicFlavors.push(String(row.c[0].v).trim());
+                        const name = String(row.c[0].v).trim();
+                        const p20 = row.c[1] ? Number(row.c[1].v) : 0;
+                        const p3 = row.c[2] ? Number(row.c[2].v) : 0;
+                        const p1 = row.c[3] ? Number(row.c[3].v) : 0;
+                        dynamicFlavors.push({ name, p20, p3, p1 });
                     }
                 });
             }
@@ -192,14 +196,14 @@
             if (flavors && flavors.length > 0) {
                 flavourSelect.innerHTML = '<option value="" disabled selected>Select a flavour...</option>';
 
-                // FIXED: Explicitly targeting array index [0] to extract string value matching cell A2
-                firstFlavourValue = flavors[0];
-
                 flavors.forEach(flavor => {
-                    if (flavor) {
+                    if (flavor.name) {
                         const opt = document.createElement('option');
-                        opt.value = flavor;
-                        opt.textContent = flavor;
+                        opt.value = flavor.name;
+                        opt.textContent = flavor.name;
+                        opt.dataset.p20 = flavor.p20;
+                        opt.dataset.p3 = flavor.p3;
+                        opt.dataset.p1 = flavor.p1;
                         flavourSelect.appendChild(opt);
                     }
                 });
@@ -209,8 +213,6 @@
         }
 
         function calculatePrice() {
-            // Direct string match check logic execution loop
-            const isA2 = flavourSelect.value === firstFlavourValue;
             let price = 0;
 
             const totalQty = parseInt(document.getElementById('totalQty').value) || 0;
@@ -226,17 +228,25 @@
             document.getElementById('sq3').value = qty1;
             document.getElementById('sq4').value = 0;
 
-            price += qty20 * (isA2 ? 20 : 25);
-            price += qty3 * (isA2 ? 3.5 : 4.5);
-            price += qty1 * (isA2 ? 1.5 : 2);
+            let p20 = 25, p3 = 4.5, p1 = 2; // Default fallback
+            const selectedOpt = flavourSelect.options[flavourSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.dataset.p20) {
+                p20 = parseFloat(selectedOpt.dataset.p20) || 0;
+                p3 = parseFloat(selectedOpt.dataset.p3) || 0;
+                p1 = parseFloat(selectedOpt.dataset.p1) || 0;
+            }
+
+            price += qty20 * p20;
+            price += qty3 * p3;
+            price += qty1 * p1;
 
             const formatted = `$${price.toFixed(2)}`;
 
             let receiptHtml = "";
             if (totalQty > 0) {
-                if (qty20 > 0) receiptHtml += `${qty20}x Mpk 20: $${(qty20 * (isA2 ? 20 : 25)).toFixed(2)}<br>`;
-                if (qty3 > 0) receiptHtml += `${qty3}x Mpk 3: $${(qty3 * (isA2 ? 3.5 : 4.5)).toFixed(2)}<br>`;
-                if (qty1 > 0) receiptHtml += `${qty1}x Mpk 1: $${(qty1 * (isA2 ? 1.5 : 2)).toFixed(2)}<br>`;
+                if (qty20 > 0) receiptHtml += `${qty20}x Mpk 20: $${(qty20 * p20).toFixed(2)}<br>`;
+                if (qty3 > 0) receiptHtml += `${qty3}x Mpk 3: $${(qty3 * p3).toFixed(2)}<br>`;
+                if (qty1 > 0) receiptHtml += `${qty1}x Mpk 1: $${(qty1 * p1).toFixed(2)}<br>`;
             }
 
             document.getElementById('receiptDisplay').innerHTML = receiptHtml;
