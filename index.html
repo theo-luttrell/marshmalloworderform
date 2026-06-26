@@ -107,7 +107,7 @@
     <div class="form-container">
         <h2>Marshmallow Order Form</h2>
 
-        <form id="orderForm" method="POST" target="hidden_iframe">
+        <form id="orderForm" method="POST">
             <input type="hidden" id="totalPriceInput" name="totalPrice" value="$0.00">
 
             <div class="form-group">
@@ -123,23 +123,20 @@
             </div>
 
             <div class="form-group">
-                <label>Quantity</label>
-                <div class="sub-question"><label for="sq1">Multipack: 20pcs</label><input type="number" id="sq1"
-                        name="multipack20" min="0" max="2" value="0"></div>
-                <div class="sub-question"><label for="sq2">Multipack: 3pcs</label><input type="number" id="sq2"
-                        name="multipack3" min="0" max="6" value="0"></div>
-                <div class="sub-question"><label for="sq3">Multipack: 1pcs</label><input type="number" id="sq3"
-                        name="multipack1" min="0" max="1" value="0"></div>
-                <div class="sub-question"><label for="sq4">Other Quantity</label><input type="number" id="sq4"
-                        name="otherQty" min="0" max="100" value="0"></div>
+                <label for="totalQty">Total Quantity</label>
+                <input type="number" id="totalQty" name="totalQty" min="0" value="0">
+                
+                <!-- Hidden fields for backwards compatibility with the spreadsheet columns -->
+                <input type="hidden" id="sq1" name="multipack20" value="0">
+                <input type="hidden" id="sq2" name="multipack3" value="0">
+                <input type="hidden" id="sq3" name="multipack1" value="0">
+                <input type="hidden" id="sq4" name="otherQty" value="0">
             </div>
 
             <div class="total-display" id="totalPriceDisplay">Total: $0.00</div>
             <button type="submit" id="submitBtn">Submit Order</button>
         </form>
     </div>
-
-    <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
     <script>
         const SPREADSHEET_ID = "18RfL1f5ec2k0mK2Y0ktk_in-BV6XFYFCrxpjQg4j7Q8";
@@ -202,13 +199,35 @@
             const isA2 = flavourSelect.value === firstFlavourValue;
             let price = 0;
 
-            price += (parseInt(document.getElementById('sq1').value) || 0) * (isA2 ? 20 : 25);
-            price += (parseInt(document.getElementById('sq2').value) || 0) * (isA2 ? 3.5 : 4.5);
-            price += (parseInt(document.getElementById('sq3').value) || 0) * (isA2 ? 1.5 : 2);
-            price += (parseInt(document.getElementById('sq4').value) || 0) * (isA2 ? 1.5 : 2);
+            const totalQty = parseInt(document.getElementById('totalQty').value) || 0;
+            
+            const qty20 = Math.floor(totalQty / 20);
+            const rem20 = totalQty % 20;
+            const qty3 = Math.floor(rem20 / 3);
+            const rem3 = rem20 % 3;
+            const qty1 = rem3;
+            
+            document.getElementById('sq1').value = qty20;
+            document.getElementById('sq2').value = qty3;
+            document.getElementById('sq3').value = qty1;
+            document.getElementById('sq4').value = 0;
+
+            price += qty20 * (isA2 ? 20 : 25);
+            price += qty3 * (isA2 ? 3.5 : 4.5);
+            price += qty1 * (isA2 ? 1.5 : 2);
 
             const formatted = `$${price.toFixed(2)}`;
-            document.getElementById('totalPriceDisplay').textContent = `Total: ${formatted}`;
+            
+            let breakdownText = "";
+            if (totalQty > 0) {
+                let parts = [];
+                if (qty20 > 0) parts.push(`${qty20}x 20pcs`);
+                if (qty3 > 0) parts.push(`${qty3}x 3pcs`);
+                if (qty1 > 0) parts.push(`${qty1}x 1pcs`);
+                breakdownText = ` (${parts.join(', ')})`;
+            }
+
+            document.getElementById('totalPriceDisplay').textContent = `Total: ${formatted}${breakdownText}`;
             document.getElementById('totalPriceInput').value = formatted;
             return price;
         }
@@ -217,21 +236,39 @@
         window.addEventListener('DOMContentLoaded', loadFlavours);
 
         let submissionActive = false;
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent standard form submission
+            if (submissionActive) return;
+            
             submissionActive = true;
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').textContent = "Sending...";
-        });
 
-        document.getElementById('hidden_iframe').addEventListener('load', () => {
-            if (submissionActive) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            for (const pair of formData) {
+                params.append(pair[0], pair[1]);
+            }
+
+            fetch(POST_URL, {
+                method: 'POST',
+                body: params,
+                mode: 'no-cors'
+            })
+            .then(() => {
                 alert("Order saved to Google Sheets successfully!");
                 form.reset();
                 calculatePrice();
+            })
+            .catch((error) => {
+                console.error('Error submitting form:', error);
+                alert("There was an error saving your order. Please try again.");
+            })
+            .finally(() => {
                 submissionActive = false;
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('submitBtn').textContent = "Submit Order";
-            }
+            });
         });
     </script>
 </body>

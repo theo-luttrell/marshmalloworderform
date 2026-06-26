@@ -37,9 +37,9 @@ function doPost(e) {
       p.totalPrice
     ]);
     
-    // Returns 204 No Content to keep the page completely static
-    return HtmlService.createHtmlOutput("");
+    // Return plain text success response
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
   } catch (error) {
-    return HtmlService.createHtmlOutput("Error: " + error.toString());
+    return ContentService.createTextOutput("Error: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
   }
 }
